@@ -80,15 +80,22 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-              echo "🚀 Atualizando Produção (greencity.net.br/api/gerar-orcamento)..."
-              cd /app/greencity-api-prod
-              # O --resolve-image always força o Swarm a buscar o novo digest da imagem no GHCR
-              docker stack deploy -c docker-stack.yml greencity-api-orcamento-prod --with-registry-auth --resolve-image always --prune
+              DEST_DIR="/app/greencity-api-prod"
+              STACK_FILE="docker-stack.yml"
+              STACK_NAME="greencity-api-orcamento-prod"
             else
-              echo "🧪 Atualizando Desenvolvimento (dev.greencity.net.br/api/gerar-orcamento)..."
-              cd /app/greencity-api-dev
-              docker stack deploy -c docker-stack-dev.yml greencity-api-orcamento-dev --with-registry-auth --resolve-image always --prune
+              DEST_DIR="/app/greencity-api-dev"
+              STACK_FILE="docker-stack-dev.yml"
+              STACK_NAME="greencity-api-orcamento-dev"
             fi
+            
+            mkdir -p $DEST_DIR
+            # Injeta os segredos no arquivo .env real dentro do Raspberry
+            echo "${{ secrets.LARAVEL_ENV }}" > $DEST_DIR/.env
+            echo "APP_KEY=${{ secrets.APP_KEY }}" >> $DEST_DIR/.env
+            
+            cd $DEST_DIR
+            docker stack deploy -c $STACK_FILE $STACK_NAME --with-registry-auth --resolve-image always --prune
 
   # ✅ JOB 4: VERIFICAÇÃO (HEALTH CHECK)
   healthcheck:
