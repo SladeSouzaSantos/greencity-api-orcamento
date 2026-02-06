@@ -2,6 +2,8 @@ version: '3.8'
 services:
   api:
     image: ghcr.io/sladesouzasantos/greencity-api-orcamento:dev
+    env_file:
+      - .env
     deploy:
       replicas: 1
       update_config:
