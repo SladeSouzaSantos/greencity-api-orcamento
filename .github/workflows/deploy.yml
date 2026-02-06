@@ -110,8 +110,8 @@ jobs:
 
       - name: Wait and Check URL
         run: |
-          echo "⏳ Aguardando 30 segundos para o container estabilizar..."
-          sleep 30
+          echo "⏳ Aguardando 60 segundos para o hardware do Raspberry estabilizar..."
+          sleep 60
           
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             PORT=8085
@@ -119,5 +119,7 @@ jobs:
             PORT=8086
           fi
           
-          echo "🌐 Testando acesso interno via Tailscale em http://100.71.249.12:$PORT"
-          curl -f http://100.71.249.12:$PORT || exit 1
+          echo "🌐 Testando acesso em http://100.71.249.12:$PORT"
+          # Adicionamos --retry para ele tentar mais de uma vez se falhar na primeira
+          # E --connect-timeout para dar fôlego ao Raspberry
+          curl --retry 3 --retry-delay 10 --connect-timeout 20 -f http://100.71.249.12:$PORT || exit 1
