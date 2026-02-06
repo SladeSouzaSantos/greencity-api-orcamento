@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  api:
+    image: ghcr.io/sladesouzasantos/greencity-api-orcamento:dev
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+    ports:
+      - "8086:80"
+    networks:
+      - greencity-net
+
+networks:
+  greencity-net:
+    external: true

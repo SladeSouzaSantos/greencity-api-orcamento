@@ -1,0 +1,116 @@
+name: Deploy Greencity API - Orçamento
+
+on:
+  push:
+    branches: [ main, dev ]
+
+jobs:
+  # 🔍 JOB 1: VALIDAÇÃO (LINT)
+  lint:
+    name: Lint Code Base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Lint HTML, CSS and JS
+        uses: github/super-linter@v5
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_HTML: true
+          VALIDATE_CSS: true
+          VALIDATE_JAVASCRIPT_ES: true
+
+  # 🏗️ JOB 2: BUILD E PUSH (CRIA A IMAGEM DOCKER)
+  # Este passo cria a imagem para a arquitetura do Raspberry Pi e envia para o GitHub Packages.
+  build:
+    name: Build and Push Image
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ghcr.io/sladesouzasantos/greencity-api-orcamento:${{ github.ref == 'refs/heads/main' && 'latest' || 'dev' }}
+
+  # 🚀 JOB 3: DEPLOY
+  deploy:
+    name: Deploy to Server
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              echo "🚀 Atualizando Produção (greencity.net.br/api/gerar-orcamento)..."
+              cd /app/greencity-api-prod
+              # O --resolve-image always força o Swarm a buscar o novo digest da imagem no GHCR
+              docker stack deploy -c docker-stack.yml greencity-api-orcamento-prod --with-registry-auth --resolve-image always --prune
+            else
+              echo "🧪 Atualizando Desenvolvimento (dev.greencity.net.br/api/gerar-orcamento)..."
+              cd /app/greencity-api-dev
+              docker stack deploy -c docker-stack-dev.yml greencity-api-orcamento-dev --with-registry-auth --resolve-image always --prune
+            fi
+
+  # ✅ JOB 4: VERIFICAÇÃO (HEALTH CHECK)
+  healthcheck:
+    name: Verify Deployment
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Wait and Check URL
+        run: |
+          echo "⏳ Aguardando 30 segundos para o container estabilizar..."
+          sleep 30
+          
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            PORT=8085
+          else
+            PORT=8086
+          fi
+          
+          echo "🌐 Testando acesso interno via Tailscale em http://100.71.249.12:$PORT"
+          curl -f http://100.71.249.12:$PORT || exit 1
