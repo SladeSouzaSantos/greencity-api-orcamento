@@ -75,23 +75,21 @@ O endpoint processa a configuração técnica completa do sistema e os dados de 
     "precoTotal": 25150.00,
     "precoKitFotovoltaico": 17958.70
 }
+```
+
 Resposta
 A API retorna um Stream de PDF profissional com tabelas de cronograma financeiro e resumo técnico dos equipamentos.
 
-🛠️ Stack Tecnológica
-Backend: Laravel 11 (PHP 8.2+)
 
-PDF Engine: DomPDF / Blade Templates
+## 🛠️ Stack Tecnológica
+- **Backend: Laravel 12 (PHP 8.4+)**
+- **PDF Engine: DomPDF / Blade Templates**
+- **Containerização: Docker Swarm**
+- **Monitoramento: Netdata**
+- **CI/CD: GitHub Actions (Multi-arch build para ARM64)**
+- **Conectividade: Cloudflare & Tailscale**
 
-Containerização: Docker Swarm
-
-Monitoramento: Netdata
-
-CI/CD: GitHub Actions (Multi-arch build para ARM64)
-
-Conectividade: Cloudflare & Tailscale
-
-<p align="center"> Desenvolvido por <strong>Pedro H. Alves de Souza Santos</strong>
-
-
-<em>Engenharia de Software & Energia Sustentável</em> </p>
+<br>
+<br>
+<p align="center"> Desenvolvido por <strong>Pedro H. Alves de Souza Santos</strong> </p>
+<p align="center"> <em>Engenharia de Software & Energia Sustentável</em> </p>
