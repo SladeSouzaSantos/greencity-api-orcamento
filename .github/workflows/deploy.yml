@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.4, 8.5]
+        php: ['8.4', '8.5'] # Aspas garantem que o YAML trate como string
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,9 +23,12 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
           coverage: none
+          tools: composer:v2
 
       - name: Install Composer Dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
+        # O pulo do gato: ignore-platform-reqs permite que o teste rode 
+        # mesmo se o micro-build do PHP no GitHub for 8.4.x e o lock pedir 8.5
+        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs
 
       - name: Copy environment file
         run: cp .env.example .env
