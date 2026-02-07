@@ -5,9 +5,41 @@ on:
     branches: [ main, dev ]
 
 jobs:
-  # 🔍 JOB 1: VALIDAÇÃO (LINT)
+  # 🧪 JOB 1: TESTES AUTOMATIZADOS (MATRIX)
+  tests:
+    name: PHP ${{ matrix.php }} Tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [8.2, 8.3, 8.4]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Install Composer Dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Execute tests
+        run: php artisan test
+
+  # 🔍 JOB 2: VALIDAÇÃO (LINT)
   lint:
     name: Lint Code Base
+    needs: tests # Só roda se os testes passarem
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -23,11 +55,10 @@ jobs:
           VALIDATE_CSS: true
           VALIDATE_JAVASCRIPT_ES: true
 
-  # 🏗️ JOB 2: BUILD E PUSH (CRIA A IMAGEM DOCKER)
-  # Este passo cria a imagem para a arquitetura do Raspberry Pi e envia para o GitHub Packages.
+  # 🏗️ JOB 3: BUILD E PUSH
   build:
     name: Build and Push Image
-    needs: lint
+    needs: lint # Só roda se o lint passar
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,7 +89,7 @@ jobs:
           tags: |
             ghcr.io/sladesouzasantos/greencity-api-orcamento:${{ github.ref == 'refs/heads/main' && 'latest' || 'dev' }}
 
-  # 🚀 JOB 3: DEPLOY
+  # 🚀 JOB 4: DEPLOY
   deploy:
     name: Deploy to Server
     needs: build
@@ -90,14 +121,13 @@ jobs:
             fi
             
             mkdir -p $DEST_DIR
-            # Injeta os segredos no arquivo .env real dentro do Raspberry
             echo "${{ secrets.LARAVEL_ENV }}" > $DEST_DIR/.env
             echo "APP_KEY=${{ secrets.APP_KEY }}" >> $DEST_DIR/.env
             
             cd $DEST_DIR
             docker stack deploy -c $STACK_FILE $STACK_NAME --with-registry-auth --resolve-image always --prune
 
-  # ✅ JOB 4: VERIFICAÇÃO (HEALTH CHECK)
+  # ✅ JOB 5: VERIFICAÇÃO (HEALTH CHECK)
   healthcheck:
     name: Verify Deployment
     needs: deploy
@@ -120,6 +150,4 @@ jobs:
           fi
           
           echo "🌐 Testando acesso em http://100.71.249.12:$PORT"
-          # Adicionamos --retry para ele tentar mais de uma vez se falhar na primeira
-          # E --connect-timeout para dar fôlego ao Raspberry
           curl --retry 3 --retry-delay 10 --connect-timeout 20 -f http://100.71.249.12:$PORT || exit 1
