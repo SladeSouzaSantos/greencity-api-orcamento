@@ -1,5 +1,5 @@
 # Estágio 1: PHP e Extensões
-FROM php:8.2-fpm-alpine
+FROM php:8.5-fpm-alpine
 
 # Instalar dependências para Laravel, GD e DomPDF
 RUN apk add --no-cache \
