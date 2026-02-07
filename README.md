@@ -1,59 +1,97 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ☀️ Greencity API - Sistema Inteligente de Propostas Solares
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Esta API é o motor de cálculo e geração de propostas da **Greencity Sustainable Energy**. Ela transforma dados técnicos e variáveis tarifárias complexas em propostas comerciais profissionais em PDF, automatizando o ciclo de vendas de sistemas fotovoltaicos.
 
-## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Diferenciais Técnicos
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 1. Engine de Projeção Financeira (PHP/Laravel)
+O sistema utiliza o `OrcamentoService` para realizar uma **projeção detalhada de 25 anos**, considerando:
+* **Regra de Transição (Fio B):** Implementação da Lei 14.300 com fatores de escalonamento anuais aplicados dinamicamente no código.
+* **Degradação de Módulos:** Cálculo de perda de eficiência linear ao longo da vida útil (ex: 20% em 25 anos).
+* **Payback Dinâmico:** Algoritmo que identifica o mês exato do ROI (Return on Investment) cruzando economia mensal vs. investimento inicial.
+* **Layout Dinâmico (Blade/CSS):** Geração de documentos PDF otimizados para impressão através do `DomPDF`, com estilização separada para fácil manutenção.
 
-## Learning Laravel
+### 2. Infraestrutura DevOps & Edge Computing
+O projeto é hospedado em um ambiente real de alta disponibilidade controlado por código:
+* **Hardware:** Rodando em um cluster **Docker Swarm** em um **Raspberry Pi 4**.
+* **CI/CD:** Pipeline automatizado no GitHub Actions com **Matrix Build** (validação simultânea em PHP 8.2, 8.3 e 8.4).
+* **Segurança de Rede:** Exposição segura via **Cloudflare Tunnels** e gerenciamento de frota via rede privada **Tailscale**.
+* **Observabilidade:** Telemetria de hardware em tempo real via **Netdata**.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 📡 Documentação da API
 
-## Laravel Sponsors
+### Endpoint de Geração
+`POST /api/gerar-orcamento`
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Exemplo de Payload (JSON)
+O endpoint processa a configuração técnica completa do sistema e os dados de faturamento da concessionária:
 
-### Premium Partners
+```json
+{
+    "nome": "RODRIGO",
+    "cpf_cnpj": "000.000.000-00",
+    "cidade": "Natal",
+    "estado": "RN",
+    "energiaGeradaMed": 1469.73,
+    "energiaGeradaJan": 1490.39,
+    "energiaGeradaFev": 1490.39,
+    "energiaGeradaMar": 1516.22,
+    "energiaGeradaAbr": 1394.82,
+    "energiaGeradaMai": 1286.33,
+    "energiaGeradaJun": 1273.26,
+    "energiaGeradaJul": 1281.11,
+    "energiaGeradaAgo": 1545.17,
+    "energiaGeradaSet": 1578.21,
+    "energiaGeradaOut": 1699.61,
+    "energiaGeradaNov": 1645.37,
+    "energiaGeradaDez": 1570.46,
+    "fabricanteModulo": "CANADIAN",
+    "modeloModulo": "CS6W-565MS",
+    "dimensaoModuloAltura": 2.38,
+    "dimensaoComprimento": 1.32,
+    "dimensaoEspessura": 0.03,
+    "pesoModulo": 27.3,
+    "perdaEficienciaModulo": 20,
+    "garantiaFisicaModulo": 15,
+    "garantiaEficienciaModulo": 25,
+    "potenciaModulo": 700,
+    "numeroModulos": 15,
+    "fabricanteInversor": "CANADIAN",
+    "modeloInversor": "CSI-5K-MTL",
+    "dimensaoInversor": "0.350 x 0.350 x 0.160 m",
+    "pesoInversor": 11.5,
+    "garantiaInversor": 10,
+    "potenciaInversor": 5.0,
+    "numeroInversores": 1,
+    "tarifa_kwh": 0.99,
+    "tarifaTUSD": 0.5828,
+    "valorLimiteIluminacaoPublica": 190.40,
+    "inflacao": 4.0,
+    "percentagemUsoRede": 40,
+    "precoTotal": 25150.00,
+    "precoKitFotovoltaico": 17958.70
+}
+Resposta
+A API retorna um Stream de PDF profissional com tabelas de cronograma financeiro e resumo técnico dos equipamentos.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+🛠️ Stack Tecnológica
+Backend: Laravel 11 (PHP 8.2+)
 
-## Contributing
+PDF Engine: DomPDF / Blade Templates
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Containerização: Docker Swarm
 
-## Code of Conduct
+Monitoramento: Netdata
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+CI/CD: GitHub Actions (Multi-arch build para ARM64)
 
-## Security Vulnerabilities
+Conectividade: Cloudflare & Tailscale
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+<p align="center"> Desenvolvido por <strong>Pedro H. Alves de Souza Santos</strong>
 
-## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+<em>Engenharia de Software & Energia Sustentável</em> </p>
