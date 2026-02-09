@@ -106,15 +106,25 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
-      - name: Deploy to Server
+      # ENVIAR ARQUIVOS VIA SCP (IGUAL AOS OUTROS)
+      - name: Copy Stack Files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-stack.yml,docker-stack-dev.yml"
+          target: "/tmp/greencity-deploy-${{ github.ref_name }}"
+
+      - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # 1. Definir variáveis por ambiente
-            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            # 1. Definir variáveis
+            if [ "${{ github.ref_name }}" == "main" ]; then
               DEST_DIR="/app/greencity-api-prod"
               STACK_FILE="docker-stack.yml"
               STACK_NAME="greencity-api-orcamento-prod"
@@ -124,10 +134,13 @@ jobs:
               STACK_NAME="greencity-api-orcamento-dev"
             fi
             
-            # 2. Garantir diretório e permissões
+            # 2. Preparar pasta
             mkdir -p $DEST_DIR
             
-            # 3. Criar arquivo .env do Laravel
+            # 3. Mover arquivos do diretório temporário para o oficial
+            cp /tmp/greencity-deploy-${{ github.ref_name }}/* $DEST_DIR/
+            
+            # 4. Criar arquivo .env
             echo "${{ secrets.LARAVEL_ENV }}" > $DEST_DIR/.env
             echo "APP_KEY=${{ secrets.APP_KEY }}" >> $DEST_DIR/.env
             
@@ -140,10 +153,15 @@ jobs:
             
             cd $DEST_DIR
             
+<<<<<<< HEAD
             # 5. RENOVAÇÃO DE LOGIN (O pulo do gato)
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # 6. Deploy com autorização de registro
+=======
+            # 5. Login e Deploy
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+>>>>>>> dev
             docker stack deploy -c $STACK_FILE $STACK_NAME --with-registry-auth --resolve-image always --prune
 
   # ✅ JOB 5: VERIFICAÇÃO (HEALTH CHECK)
