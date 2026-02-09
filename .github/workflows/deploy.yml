@@ -144,24 +144,10 @@ jobs:
             echo "${{ secrets.LARAVEL_ENV }}" > $DEST_DIR/.env
             echo "APP_KEY=${{ secrets.APP_KEY }}" >> $DEST_DIR/.env
             
-            # 4. Enviar os arquivos da stack para a pasta (via cat para evitar SCP se quiser simplificar)
-            # Como você não usou SCP aqui, assumimos que os arquivos já estão no repo ou pasta.
-            # Se precisar garantir a versão nova do stack.yml, use o cat:
-            cat <<EOF > $DEST_DIR/$STACK_FILE
-            $(cat $STACK_FILE)
-            EOF
-            
             cd $DEST_DIR
             
-<<<<<<< HEAD
-            # 5. RENOVAÇÃO DE LOGIN (O pulo do gato)
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # 6. Deploy com autorização de registro
-=======
             # 5. Login e Deploy
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
->>>>>>> dev
             docker stack deploy -c $STACK_FILE $STACK_NAME --with-registry-auth --resolve-image always --prune
 
   # ✅ JOB 5: VERIFICAÇÃO (HEALTH CHECK)
