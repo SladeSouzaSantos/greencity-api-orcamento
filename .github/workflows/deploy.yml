@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: ['8.4', '8.5'] # Aspas garantem que o YAML trate como string
+        php: ['8.4', '8.5']
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -26,8 +26,6 @@ jobs:
           tools: composer:v2
 
       - name: Install Composer Dependencies
-        # O pulo do gato: ignore-platform-reqs permite que o teste rode 
-        # mesmo se o micro-build do PHP no GitHub for 8.4.x e o lock pedir 8.5
         run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs
 
       - name: Copy environment file
@@ -42,7 +40,7 @@ jobs:
   # 🔍 JOB 2: VALIDAÇÃO (LINT)
   lint:
     name: Lint Code Base
-    needs: tests # Só roda se os testes passarem
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -61,7 +59,7 @@ jobs:
   # 🏗️ JOB 3: BUILD E PUSH
   build:
     name: Build and Push Image
-    needs: lint # Só roda se o lint passar
+    needs: lint
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -91,6 +89,8 @@ jobs:
           push: true
           tags: |
             ghcr.io/sladesouzasantos/greencity-api-orcamento:${{ github.ref == 'refs/heads/main' && 'latest' || 'dev' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # 🚀 JOB 4: DEPLOY
   deploy:
@@ -106,14 +106,25 @@ jobs:
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
-      - name: Deploy to Server
+      # ENVIAR ARQUIVOS VIA SCP (IGUAL AOS OUTROS)
+      - name: Copy Stack Files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-stack.yml,docker-stack-dev.yml"
+          target: "/tmp/greencity-deploy-${{ github.ref_name }}"
+
+      - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            # 1. Definir variáveis
+            if [ "${{ github.ref_name }}" == "main" ]; then
               DEST_DIR="/app/greencity-api-prod"
               STACK_FILE="docker-stack.yml"
               STACK_NAME="greencity-api-orcamento-prod"
@@ -123,11 +134,20 @@ jobs:
               STACK_NAME="greencity-api-orcamento-dev"
             fi
             
+            # 2. Preparar pasta
             mkdir -p $DEST_DIR
+            
+            # 3. Mover arquivos do diretório temporário para o oficial
+            cp /tmp/greencity-deploy-${{ github.ref_name }}/* $DEST_DIR/
+            
+            # 4. Criar arquivo .env
             echo "${{ secrets.LARAVEL_ENV }}" > $DEST_DIR/.env
             echo "APP_KEY=${{ secrets.APP_KEY }}" >> $DEST_DIR/.env
             
             cd $DEST_DIR
+            
+            # 5. Login e Deploy
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker stack deploy -c $STACK_FILE $STACK_NAME --with-registry-auth --resolve-image always --prune
 
   # ✅ JOB 5: VERIFICAÇÃO (HEALTH CHECK)
@@ -143,7 +163,7 @@ jobs:
 
       - name: Wait and Check URL
         run: |
-          echo "⏳ Aguardando 60 segundos para o hardware do Raspberry estabilizar..."
+          echo "⏳ Aguardando 60 segundos..."
           sleep 60
           
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
@@ -153,4 +173,4 @@ jobs:
           fi
           
           echo "🌐 Testando acesso em http://100.71.249.12:$PORT"
-          curl --retry 3 --retry-delay 10 --connect-timeout 20 -f http://100.71.249.12:$PORT || exit 1
+          curl --retry 10 --retry-delay 15 --retry-all-errors --connect-timeout 20 -Iv http://100.71.249.12:$PORT || exit 1
