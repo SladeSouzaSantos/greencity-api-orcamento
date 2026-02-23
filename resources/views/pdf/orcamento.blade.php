@@ -395,8 +395,8 @@
                     <td style="width: 50%; vertical-align: top; border: none;">
                         <strong style="font-size: 9pt; color: #666; text-transform: uppercase;">Pagamento Direto</strong>
                         <p style="font-size: 10pt; color: #333; margin-top: 5px;">
-                            • Cartões de Débito e Crédito<br>
-                            • Cartões de Crédito (Até 21x)<br>
+                            • Cartões de Débito<br>
+                            • Cartões de Crédito (Até 21x com juros)<br>
                             • Boleto Bancário<br>
                             • Transferência Bancária (TED | PIX)
                         </p>
