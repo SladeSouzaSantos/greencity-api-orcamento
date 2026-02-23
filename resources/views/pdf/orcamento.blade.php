@@ -52,7 +52,7 @@
             </tr>
             <tr>
                 <th>Geração Média Mensal</th>
-                <td colspan="3">{{ number_format($estimativas['mensal']['media_geracao'] ?? 1451.8, 1, ',', '.') }} kWh/mês</td>
+                <td colspan="3">{{ number_format($resumo_sistema['geracao']['med'] ?? 1451.8, 1, ',', '.') }} kWh/mês</td>
             </tr>
         </table>
 

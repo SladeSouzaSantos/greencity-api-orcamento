@@ -18,6 +18,7 @@ class OrcamentoController extends Controller
             'cpf_cnpj' => 'nullable|string',
             'cidade' => 'required|string',
             'estado' => 'required|string',
+            'consumo_medio' => 'required|numeric',
             'energiaGeradaMed' => 'required|numeric',
             'energiaGeradaJan' => 'required|numeric',
             'energiaGeradaFev' => 'required|numeric',

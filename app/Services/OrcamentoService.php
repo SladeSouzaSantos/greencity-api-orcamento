@@ -31,6 +31,7 @@ class OrcamentoService {
                 'cpf_cnpj' => $dados['cpf_cnpj'],
                 'cidade' => $dados['cidade'],
                 'estado' => $dados['estado'],
+                'consumo_medio' => $dados['consumo_medio'],
             ],
             'datas' => [
                 'emissao' => $hoje->format('d/m/Y'),
